@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const connectDB = require("./config/db");
@@ -14,10 +13,8 @@ const { autoMarkAbsent } = require("./controllers/attendanceController");
 
 const app = express();
 
-// ================= SECURITY =================
 app.use(helmet());
 
-// ================= CORS CONFIG =================
 const allowedOrigins = [
   "http://localhost:3000",
   process.env.FRONTEND_URL,
@@ -26,7 +23,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow non-browser tools (Postman, curl)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -35,29 +31,24 @@ app.use(
 
       return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true, // 🔥 REQUIRED for cookies
+    credentials: false,
   })
 );
 
-// ================= MIDDLEWARE =================
 app.use(express.json());
-app.use(cookieParser()); // 🔥 REQUIRED to read cookies
 
-// ================= DATABASE =================
 connectDB()
   .then(() => {
     console.log("Database Connected");
-    autoMarkAbsent(); // optional demo feature
+    autoMarkAbsent();
   })
   .catch((err) => {
     console.error("DB Connection Failed:", err.message);
   });
 
-// ================= ROUTES =================
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
 
-// ================= PROTECTED TEST ROUTES =================
 app.get(
   "/api/admin/test",
   protect,
@@ -81,18 +72,15 @@ app.get(
   }
 );
 
-// ================= HEALTH CHECK =================
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "Attendance Backend Running",
   });
 });
 
-// ================= GLOBAL ERROR HANDLER =================
 app.use((err, req, res, next) => {
   console.error("Global Error:", err.message);
 
-  // Handle CORS errors cleanly
   if (err.message === "Not allowed by CORS") {
     return res.status(403).json({
       message: "CORS Error: Origin not allowed",
@@ -104,7 +92,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ================= SERVER =================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
