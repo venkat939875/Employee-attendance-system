@@ -32,7 +32,9 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push(`/login-otp?email=${email}&type=admin`);
+      localStorage.setItem("token", data.token);
+      router.push("/admindashboard");
+
     } catch {
       setError("Server error. Please try again.");
     } finally {
@@ -74,29 +76,19 @@ export default function AdminLoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="w-full rounded-lg px-4 py-3 mb-3 bg-white text-slate-800 border border-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          className="w-full rounded-lg px-4 py-3 mb-6 bg-white text-slate-800 border border-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
         />
 
         {error && (
           <p className="text-red-600 text-sm text-center mb-4">{error}</p>
         )}
 
-        <div className="text-right mb-6">
-          <button
-            type="button"
-            onClick={() => router.push("/forgot-password?type=admin")}
-            className="text-sm text-indigo-600 hover:underline"
-          >
-            Forgot Password?
-          </button>
-        </div>
-
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
         >
-          {loading ? "Sending OTP..." : "Send OTP"}
+          {loading ? "Logging in..." : "Login"}
         </button>
 
         <p className="mt-6 text-center text-sm text-slate-600">
