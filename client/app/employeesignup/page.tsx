@@ -8,6 +8,7 @@ export default function EmployeeSignupPage() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,6 +28,11 @@ export default function EmployeeSignupPage() {
       return;
     }
 
+    if (!password || password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -36,6 +42,7 @@ export default function EmployeeSignupPage() {
         body: JSON.stringify({
           name,
           email,
+          password,
           role: "employee",
         }),
       });
@@ -47,7 +54,7 @@ export default function EmployeeSignupPage() {
         return;
       }
 
-      router.push(`/verify-otp?email=${email}&type=employee`);
+      router.push("/employeelogin");
     } catch (error) {
       console.error(error);
       setError("Server error. Please try again.");
@@ -64,7 +71,6 @@ export default function EmployeeSignupPage() {
       
       <div className="absolute inset-0 bg-black/70 z-0"></div>
 
-      
       <form
         onSubmit={handleSignup}
         className="relative z-10 w-full max-w-md rounded-2xl p-10
@@ -75,7 +81,7 @@ export default function EmployeeSignupPage() {
         </h2>
 
         <p className="text-sm text-slate-600 mb-8 text-center">
-          Verify your email to create your account
+          Create your employee account
         </p>
 
         <div className="flex flex-col gap-5">
@@ -103,6 +109,18 @@ export default function EmployeeSignupPage() {
                        focus:outline-none focus:ring-2 focus:ring-indigo-600"
           />
 
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full rounded-lg px-4 py-3 
+                       bg-white text-slate-800 placeholder-slate-400
+                       border border-slate-300 shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          />
+
           {error && (
             <p className="text-sm text-red-500 text-center">
               {error}
@@ -116,13 +134,11 @@ export default function EmployeeSignupPage() {
           className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-lg
                      hover:bg-indigo-700 transition disabled:opacity-50"
         >
-          {loading ? "Sending OTP..." : "Send OTP"}
+          {loading ? "Creating Account..." : "Register"}
         </button>
 
-        
         <div className="mt-4 p-3 rounded-lg bg-yellow-50 border border-yellow-300 text-sm text-yellow-800 text-center">
-          <strong>Note:</strong> After clicking "Send OTP", check your inbox and
-          also your spam/junk folder for the verification OTP.
+          <strong>Note:</strong> Use a secure password for your account.
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-600">
