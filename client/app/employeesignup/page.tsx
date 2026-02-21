@@ -1,223 +1,157 @@
-const Attendance = require("../models/Attendance");
-const User = require("../models/User");
-const { Parser } = require("json2csv");
+"use client";
 
-const getTodayDate = () => {
-  return new Date().toISOString().split("T")[0];
-};
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-exports.markLogin = async (req, res) => {
-  try {
-    const today = getTodayDate();
+export default function EmployeeSignupPage() {
+  const router = useRouter();
 
-    let attendance = await Attendance.findOne({
-      employeeId: req.user.id,
-      date: today,
-    });
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-    const user = await User.findById(req.user.id).select("name");
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+  const validateEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
     }
 
-    const now = new Date();
+    if (!password || password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
-    const lateThreshold = new Date();
-    lateThreshold.setHours(9, 30, 0, 0);
+    setLoading(true);
 
-    const status = now > lateThreshold ? "Late" : "Present";
+    try {
+      const res = await fetch(`${API_URL}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role: "employee",
+        }),
+      });
 
-    if (attendance) {
-      if (attendance.loginTime) {
-        return res.status(400).json({
-          message: "You already marked attendance today",
-        });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Signup failed");
+        return;
       }
 
-      attendance.loginTime = now;
-      attendance.status = status;
-      attendance.totalHours = 0;
-
-      await attendance.save();
-      return res.status(200).json(attendance);
+      router.push("/employeelogin");
+    } catch (error) {
+      console.error(error);
+      setError("Server error. Please try again.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    attendance = await Attendance.create({
-      employeeId: req.user.id,
-      name: user.name,
-      date: today,
-      loginTime: now,
-      status,
-      totalHours: 0,
-    });
+  return (
+    <main
+      className="relative flex min-h-screen items-center justify-center px-6 bg-cover bg-center"
+      style={{ backgroundImage: "url('/images/empsignin.jpg')" }}
+    >
+      
+      <div className="absolute inset-0 bg-black/70 z-0"></div>
 
-    return res.status(201).json(attendance);
+      <form
+        onSubmit={handleSignup}
+        className="relative z-10 w-full max-w-md rounded-2xl p-10
+                   bg-white shadow-xl"
+      >
+        <h2 className="text-3xl font-bold text-slate-800 mb-2 text-center">
+          Employee Signup
+        </h2>
 
-  } catch (error) {
-    console.error("Mark Login Error:", error);
-    return res.status(500).json({ message: "Failed to mark attendance" });
-  }
-};
+        <p className="text-sm text-slate-600 mb-8 text-center">
+          Create your employee account
+        </p>
 
-exports.markLogout = async (req, res) => {
-  try {
-    const today = getTodayDate();
+        <div className="flex flex-col gap-5">
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="w-full rounded-lg px-4 py-3 
+                       bg-white text-slate-800 placeholder-slate-400
+                       border border-slate-300 shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          />
 
-    const attendance = await Attendance.findOne({
-      employeeId: req.user.id,
-      date: today,
-    });
+          <input
+            type="email"
+            placeholder="Employee Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full rounded-lg px-4 py-3 
+                       bg-white text-slate-800 placeholder-slate-400
+                       border border-slate-300 shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          />
 
-    if (!attendance || !attendance.loginTime) {
-      return res.status(400).json({
-        message: "You must mark login first",
-      });
-    }
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full rounded-lg px-4 py-3 
+                       bg-white text-slate-800 placeholder-slate-400
+                       border border-slate-300 shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          />
 
-    if (attendance.logoutTime) {
-      return res.status(400).json({
-        message: "You already logged out today",
-      });
-    }
+          {error && (
+            <p className="text-sm text-red-500 text-center">
+              {error}
+            </p>
+          )}
+        </div>
 
-    const now = new Date();
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-6 w-full bg-indigo-600 text-white py-3 rounded-lg
+                     hover:bg-indigo-700 transition disabled:opacity-50"
+        >
+          {loading ? "Creating Account..." : "Register"}
+        </button>
 
-    const workEndTime = new Date();
-    workEndTime.setHours(18, 30, 0, 0);
+        <div className="mt-4 p-3 rounded-lg bg-yellow-50 border border-yellow-300 text-sm text-yellow-800 text-center">
+          <strong>Note:</strong> Use a secure password for your account.
+        </div>
 
-    const effectiveLogout =
-      now > workEndTime ? workEndTime : now;
-
-    attendance.logoutTime = effectiveLogout;
-
-    const diffHours =
-      (attendance.logoutTime - attendance.loginTime) /
-      (1000 * 60 * 60);
-
-    attendance.totalHours = Number(diffHours.toFixed(2));
-
-    if (attendance.totalHours < 8) {
-      attendance.status = "Incomplete";
-    } else {
-      if (attendance.status !== "Late") {
-        attendance.status = "Present";
-      }
-    }
-
-    await attendance.save();
-    return res.status(200).json(attendance);
-
-  } catch (error) {
-    console.error("Mark Logout Error:", error);
-    return res.status(500).json({ message: "Failed to mark logout" });
-  }
-};
-
-exports.getMyAttendance = async (req, res) => {
-  try {
-    const records = await Attendance.find({
-      employeeId: req.user.id,
-    }).sort({ date: -1, createdAt: -1 });
-
-    return res.status(200).json(records);
-
-  } catch (error) {
-    console.error("Fetch Attendance Error:", error);
-    return res.status(500).json({
-      message: "Failed to fetch attendance records",
-    });
-  }
-};
-
-exports.getAllAttendance = async (req, res) => {
-  try {
-    const records = await Attendance.find()
-      .sort({ date: -1, createdAt: -1 });
-
-    return res.status(200).json(records);
-
-  } catch (error) {
-    console.error("Admin Fetch Attendance Error:", error);
-    return res.status(500).json({
-      message: "Failed to fetch attendance records",
-    });
-  }
-};
-
-exports.autoMarkAbsent = async () => {
-  try {
-    const today = getTodayDate();
-
-    const employees = await User.find({ role: "employee" });
-
-    for (let user of employees) {
-      const existing = await Attendance.findOne({
-        employeeId: user._id,
-        date: today,
-      });
-
-      if (!existing) {
-        await Attendance.create({
-          employeeId: user._id,
-          name: user.name,
-          date: today,
-          totalHours: 0,
-          status: "Absent",
-        });
-      }
-    }
-
-    console.log("Auto Absent Check Completed");
-
-  } catch (error) {
-    console.error("Auto Mark Absent Error:", error);
-  }
-};
-
-exports.exportAttendanceCSV = async (req, res) => {
-  try {
-    const records = await Attendance.find().sort({ date: -1 });
-
-    if (!records.length) {
-      return res.status(404).json({
-        message: "No attendance records found",
-      });
-    }
-
-    const formattedData = records.map(record => ({
-      name: record.name,
-      date: record.date,
-      loginTime: record.loginTime
-        ? new Date(record.loginTime).toLocaleString()
-        : "-",
-      logoutTime: record.logoutTime
-        ? new Date(record.logoutTime).toLocaleString()
-        : "-",
-      totalHours: record.totalHours,
-      status: record.status,
-    }));
-
-    const fields = [
-      { label: "Employee Name", value: "name" },
-      { label: "Date", value: "date" },
-      { label: "Login Time", value: "loginTime" },
-      { label: "Logout Time", value: "logoutTime" },
-      { label: "Total Hours", value: "totalHours" },
-      { label: "Status", value: "status" },
-    ];
-
-    const parser = new Parser({ fields });
-    const csv = parser.parse(formattedData);
-
-    res.header("Content-Type", "text/csv");
-    res.attachment("attendance-report.csv");
-    return res.send(csv);
-
-  } catch (error) {
-    console.error("CSV Export Error:", error);
-    return res.status(500).json({
-      message: "Failed to export CSV",
-    });
-  }
-};
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => router.push("/employeelogin")}
+            className="text-indigo-600 hover:underline font-medium"
+          >
+            Login
+          </button>
+        </p>
+      </form>
+    </main>
+  );
+}
