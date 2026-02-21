@@ -8,6 +8,7 @@ export default function AdminSignupPage() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,12 +19,17 @@ export default function AdminSignupPage() {
     return regex.test(value);
   };
 
-  const handleSendOtp = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
     if (!validateEmail(email)) {
       setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -41,6 +47,7 @@ export default function AdminSignupPage() {
         body: JSON.stringify({
           name,
           email,
+          password,
           role: "admin",
         }),
       });
@@ -52,7 +59,8 @@ export default function AdminSignupPage() {
         return;
       }
 
-      router.push(`/verify-otp?email=${email}&type=admin`);
+      router.push("/adminlogin");
+
     } catch {
       setError("Server error. Please try again.");
     } finally {
@@ -77,7 +85,7 @@ export default function AdminSignupPage() {
           Create your administrator account
         </p>
 
-        <form onSubmit={handleSendOtp} className="space-y-5">
+        <form onSubmit={handleSignup} className="space-y-5">
 
           <input
             type="text"
@@ -97,6 +105,15 @@ export default function AdminSignupPage() {
             className="w-full rounded-lg px-4 py-3 bg-white text-slate-800 border border-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
           />
 
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="Password"
+            className="w-full rounded-lg px-4 py-3 bg-white text-slate-800 border border-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          />
+
           {error && (
             <p className="text-red-600 text-sm text-center">{error}</p>
           )}
@@ -106,11 +123,11 @@ export default function AdminSignupPage() {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg transition disabled:opacity-50"
           >
-            {loading ? "Sending OTP..." : "Send OTP"}
+            {loading ? "Creating Account..." : "Register"}
           </button>
 
           <div className="mt-3 p-3 rounded-lg bg-yellow-50 border border-yellow-300 text-sm text-yellow-800 text-center">
-            <strong>Note:</strong> Check inbox and spam folder for the verification OTP.
+            <strong>Note:</strong> Use a secure password for your administrator account.
           </div>
         </form>
 
