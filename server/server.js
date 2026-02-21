@@ -4,10 +4,8 @@ const helmet = require("helmet");
 require("dotenv").config();
 
 const connectDB = require("./config/db");
-
 const authRoutes = require("./routes/authRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
-
 const { protect, authorize } = require("./middleware/authMiddleware");
 const { autoMarkAbsent } = require("./controllers/attendanceController");
 
@@ -19,14 +17,12 @@ app.use(express.json());
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin) return callback(null, true); 
+      if (!origin) return callback(null, true);
 
-      // Allow localhost
       if (origin === "http://localhost:3000") {
         return callback(null, true);
       }
 
-      // Allow ALL your Vercel deployments
       if (origin.includes("vercel.app")) {
         return callback(null, true);
       }
@@ -36,9 +32,6 @@ app.use(
     credentials: true,
   })
 );
-
-// Handle preflight requests
-app.options("*", cors());
 
 connectDB()
   .then(() => {
@@ -52,28 +45,19 @@ connectDB()
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
 
-app.get(
-  "/api/admin/test",
-  protect,
-  authorize("admin"),
-  (req, res) => {
-    res.json({
-      message: "Admin access granted",
-      user: req.user,
-    });
-  }
-);
+app.get("/api/admin/test", protect, authorize("admin"), (req, res) => {
+  res.json({
+    message: "Admin access granted",
+    user: req.user,
+  });
+});
 
-app.get(
-  "/api/user/test",
-  protect,
-  (req, res) => {
-    res.json({
-      message: "User authenticated",
-      user: req.user,
-    });
-  }
-);
+app.get("/api/user/test", protect, (req, res) => {
+  res.json({
+    message: "User authenticated",
+    user: req.user,
+  });
+});
 
 app.get("/", (req, res) => {
   res.status(200).json({
