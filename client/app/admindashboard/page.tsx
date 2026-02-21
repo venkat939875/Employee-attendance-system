@@ -18,18 +18,30 @@ export default function AdminDashboard() {
     absent: 0,
   });
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
-    fetchAttendance();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/adminlogin");
+      return;
+    }
+    fetchAttendance(token);
   }, []);
 
-  const fetchAttendance = async () => {
+  const fetchAttendance = async (token: string) => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/admin/attendance`,
-        { credentials: "include" }
+        `${API_URL}/api/attendance/admin/attendance`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (!res.ok) {
+        localStorage.removeItem("token");
         router.push("/adminlogin");
         return;
       }
@@ -92,13 +104,21 @@ export default function AdminDashboard() {
   }, [search, selectedDate, records]);
 
   const handleExport = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return router.push("/adminlogin");
+
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/attendance/admin/export`,
-        { credentials: "include" }
+        `${API_URL}/api/attendance/admin/export`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       if (!response.ok) {
+        localStorage.removeItem("token");
         router.push("/adminlogin");
         return;
       }
@@ -115,11 +135,8 @@ export default function AdminDashboard() {
     } catch {}
   };
 
-  const handleLogout = async () => {
-    await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`,
-      { method: "POST", credentials: "include" }
-    );
+  const handleLogout = () => {
+    localStorage.removeItem("token");
     router.push("/");
   };
 
@@ -141,18 +158,13 @@ export default function AdminDashboard() {
             </h2>
 
             <nav className="space-y-4">
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl 
-                              bg-indigo-600 text-white font-semibold shadow-sm">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow-sm">
                 Dashboard
               </div>
-
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl 
-                              text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer">
                 Attendance
               </div>
-
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl 
-                              text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition cursor-pointer">
                 Reports
               </div>
             </nav>
@@ -189,40 +201,35 @@ export default function AdminDashboard() {
             <SummaryCard title="Today Incomplete" value={counts.incomplete} accent="red" />
             <SummaryCard title="Today Absent" value={counts.absent} accent="slate" />
           </div>
+
           <div className="flex justify-between items-center mb-8">
-  <div className="flex gap-4">
-    <input
-      type="text"
-      placeholder="Search employee..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      className="border border-slate-300 px-4 py-2 rounded-xl
-                 bg-white text-slate-900
-                 focus:ring-2 focus:ring-indigo-600 outline-none shadow-sm"
-    />
+            <div className="flex gap-4">
+              <input
+                type="text"
+                placeholder="Search employee..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="border border-slate-300 px-4 py-2 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none shadow-sm"
+              />
 
-    <input
-      type="date"
-      value={selectedDate}
-      onChange={(e) => setSelectedDate(e.target.value)}
-      className="border border-slate-300 px-4 py-2 rounded-xl
-                 bg-white text-slate-900
-                 focus:ring-2 focus:ring-indigo-600 outline-none shadow-sm"
-    />
-  </div>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="border border-slate-300 px-4 py-2 rounded-xl bg-white text-slate-900 focus:ring-2 focus:ring-indigo-600 outline-none shadow-sm"
+              />
+            </div>
 
-  <button
-    onClick={handleExport}
-    className="bg-indigo-600 text-white px-6 py-2 rounded-xl shadow-md hover:bg-indigo-700 transition"
-  >
-    Export CSV
-  </button>
-</div>
-
+            <button
+              onClick={handleExport}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-xl shadow-md hover:bg-indigo-700 transition"
+            >
+              Export CSV
+            </button>
+          </div>
 
           <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-slate-200">
             <table className="w-full text-left text-sm">
-
               <thead className="bg-indigo-600 text-white uppercase tracking-wide shadow-md">
                 <tr>
                   <th className="py-3 px-4">Name</th>
@@ -240,30 +247,24 @@ export default function AdminDashboard() {
                     <td className="py-3 px-4 font-semibold text-slate-800">
                       {r.name}
                     </td>
-
                     <td className="px-4 text-slate-800">
                       {new Date(r.date).toLocaleDateString("en-IN")}
                     </td>
-
                     <td className="px-4 text-slate-800">
                       {r.loginTime
                         ? new Date(r.loginTime).toLocaleTimeString("en-IN")
                         : "-"}
                     </td>
-
                     <td className="px-4 text-slate-800">
                       {r.logoutTime
                         ? new Date(r.logoutTime).toLocaleTimeString("en-IN")
                         : "-"}
                     </td>
-
                     <td className="px-4 font-bold text-indigo-700">
                       {r.totalHours}
                     </td>
-
                     <td className="px-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold 
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold 
                         ${
                           r.status === "Present"
                             ? "bg-emerald-500 text-white"
@@ -282,7 +283,6 @@ export default function AdminDashboard() {
                   </tr>
                 ))}
               </tbody>
-
             </table>
           </div>
 
