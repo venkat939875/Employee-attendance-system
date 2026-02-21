@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AdminLoginPage() {
+export default function EmployeeLoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -22,7 +22,10 @@ export default function AdminLoginPage() {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+        }),
       });
 
       const data = await res.json();
@@ -32,10 +35,13 @@ export default function AdminLoginPage() {
         return;
       }
 
+      // ✅ Save JWT token
       localStorage.setItem("token", data.token);
-      router.push("/admindashboard");
 
-    } catch {
+      // ✅ Redirect to dashboard
+      router.push("/employee-dashboard");
+
+    } catch (err) {
       setError("Server error. Please try again.");
     } finally {
       setLoading(false);
@@ -45,7 +51,7 @@ export default function AdminLoginPage() {
   return (
     <main
       className="relative flex min-h-screen items-center justify-center px-6 bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/adminbg.jpg')" }}
+      style={{ backgroundImage: "url('/images/empbg.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
 
@@ -54,16 +60,16 @@ export default function AdminLoginPage() {
         className="relative z-10 w-full max-w-md rounded-2xl p-10 bg-white shadow-xl"
       >
         <h1 className="text-3xl font-bold text-center mb-2 text-slate-900">
-          Admin Login
+          Employee Login
         </h1>
 
         <p className="text-center text-slate-600 mb-8">
-          Secure access to admin dashboard
+          Access your attendance dashboard
         </p>
 
         <input
           type="email"
-          placeholder="Admin Email"
+          placeholder="Employee Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -92,10 +98,10 @@ export default function AdminLoginPage() {
         </button>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          Don’t have an admin account?{" "}
+          Don’t have an account?{" "}
           <button
             type="button"
-            onClick={() => router.push("/admin-signup")}
+            onClick={() => router.push("/employeesignup")}
             className="text-indigo-600 hover:underline font-medium"
           >
             Sign up
