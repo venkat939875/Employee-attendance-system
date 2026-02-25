@@ -59,5 +59,5 @@ This system automates employee attendance tracking by:
 
 ## 👨‍💻 Developed By
 
-Surya\
+Regula Venkata Subbaiah\
 Full Stack Developer (Next.js + Node.js)
